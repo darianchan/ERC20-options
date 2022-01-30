@@ -38,6 +38,8 @@ contract OptionsContract is ERC20 {
 
       activeOptions[optionID] = option;
 
+      _mint(msg.sender, 1) // TODO: placeholder for now, but figure out how to calculate erc20 to option value
+
       emit OptionMinted(msg.sender, _strikePrice, _optionPremium, _expirationTime);
     }
 }
