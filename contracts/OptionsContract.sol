@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract OptionsContract is ERC20 {
     address owner;
-    uint optionID;
+    uint256 optionID;
 
     struct Option {
         address buyer;
@@ -14,32 +14,85 @@ contract OptionsContract is ERC20 {
         uint256 expirationTime; // in seconds
     }
 
-    mapping(uint => Option) activeOptions;
+    mapping(uint256 => Option) activeOptions;
 
-    event OptionMinted(address buyer, uint strikePrice, uint optionPremium, uint expirationTime);
+    event OptionMinted(
+        address buyer,
+        uint256 strikePrice,
+        uint256 optionPremium,
+        uint256 expirationTime
+    );
+    event OptionExercised(uint256 optionID);
 
-    constructor(string memory _name, string memory _symbol, address _owner) ERC20(_name, _symbol) {
-      owner = _owner;
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address _owner
+    ) ERC20(_name, _symbol) {
+        owner = _owner;
     }
 
     // when a user buys an option, we mint them an erc20 token
-    function mintOption(uint _strikePrice, uint _optionPremium, uint _expirationTime) public payable {
-      // TODO: check that there is enoguh liquidity to purchase an option for that strike
-      // TODO: figure out how optionPremium is prices
-      require(msg.value >= _strikePrice + _optionPremium, "not enough eth to lock in collateral");
+    function mintOption(
+        uint256 _strikePrice,
+        uint256 _optionPremium,
+        uint256 _expirationTime
+    ) public payable {
+        // TODO: check that there is enoguh liquidity to purchase an option for that strike
+        // TODO: figure out how optionPremium is prices
+        require(
+            msg.value >= _strikePrice + _optionPremium,
+            "not enough eth to lock in collateral"
+        );
 
-      optionID++;
-      Option memory option = Option({
-        buyer: msg.sender,
-        strikePrice: _strikePrice,
-        optionPremium: _optionPremium,
-        expirationTime: _expirationTime
-      });
+        optionID++;
+        Option memory option = Option({
+            buyer: msg.sender,
+            strikePrice: _strikePrice,
+            optionPremium: _optionPremium,
+            expirationTime: _expirationTime
+        });
 
-      activeOptions[optionID] = option;
+        activeOptions[optionID] = option;
 
-      _mint(msg.sender, 1) // TODO: placeholder for now, but figure out how to calculate erc20 to option value
+        _mint(msg.sender, 1); // TODO: placeholder for now, but figure out how to calculate erc20 to option value
 
-      emit OptionMinted(msg.sender, _strikePrice, _optionPremium, _expirationTime);
+        emit OptionMinted(
+            msg.sender,
+            _strikePrice,
+            _optionPremium,
+            _expirationTime
+        );
+    }
+
+    function exerciseOption(uint256 _optionID, uint256 _currentPrice)
+        public
+        returns (uint256)
+    {
+        // TODO: get current price from a price oracle. Placeholder for now
+        Option storage option = activeOptions[_optionID];
+        require(
+            block.timestamp >= option.expirationTime - 3600,
+            "not within exercise period"
+        );
+
+        uint256 profit = option.strikePrice - _currentPrice;
+
+        // if there is a profit, then transfer the profit to owner + strike price (locked collateral)
+        // if negative profit, then just transfer the strike price (locked collateral back) - buy loses on option premium
+        if (profit >= 0) {
+            uint256 amountPositiveProfit = profit + option.strikePrice;
+            (bool success, ) = msg.sender.call{value: amountPositiveProfit}("");
+            require(success);
+        } else if (profit < 0) {
+            uint256 amountNegativeProfit = option.strikePrice;
+            (bool success, ) = msg.sender.call{value: amountNegativeProfit}("");
+            require(success);
+        }
+
+        delete activeOptions[_optionID];
+
+        emit OptionExercised(_optionID);
+        return _optionID;
     }
 }

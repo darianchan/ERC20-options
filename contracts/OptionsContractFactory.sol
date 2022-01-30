@@ -17,8 +17,8 @@ contract OptionsContractFactory {
       _;
     }
 
-    function deployNewERC20Option(string calldata _name, string calldata _symbol) onlyOwner public returns (address) {
-      OptionsContract token = new OptionsContract(_name, _symbol);
+    function deployNewERC20Option(string calldata _name, string calldata _symbol, address _owner) onlyOwner public returns (address) {
+      OptionsContract token = new OptionsContract(_name, _symbol, _owner);
 
       emit ERC20OptionCreated(address(token));
 
