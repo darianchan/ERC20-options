@@ -16,9 +16,10 @@ contract OptionsContractFactory {
       require(msg.sender == owner);
       _;
     }
-
-    function deployNewERC20Option(string calldata _name, string calldata _symbol, address _owner) onlyOwner public returns (address) {
-      OptionsContract token = new OptionsContract(_name, _symbol, _owner);
+    
+    // price feed is the address of the chainlink oracle for the token
+    function deployNewERC20Option(string calldata _name, string calldata _symbol, address _owner, address _priceFeed) onlyOwner public returns (address) {
+      OptionsContract token = new OptionsContract(_name, _symbol, _owner, _priceFeed);
 
       emit ERC20OptionCreated(address(token));
 

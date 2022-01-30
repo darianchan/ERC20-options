@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 contract OptionsContract is ERC20 {
     address owner;
     uint256 optionID;
+    AggregatorV3Interface private priceFeed;
 
     struct Option {
         address buyer;
@@ -28,9 +29,11 @@ contract OptionsContract is ERC20 {
     constructor(
         string memory _name,
         string memory _symbol,
-        address _owner
+        address _owner,
+        address _priceFeed
     ) ERC20(_name, _symbol) {
         owner = _owner;
+        priceFeed = AggregatorV3Interface(_priceFeed);
     }
 
     // when a user buys an option, we mint them an erc20 token
@@ -97,5 +100,10 @@ contract OptionsContract is ERC20 {
 
         emit OptionExercised(_optionID);
         return _optionID;
+    }
+
+    function getLatestPrice() private view returns (int256) {
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        return price;
     }
 }
