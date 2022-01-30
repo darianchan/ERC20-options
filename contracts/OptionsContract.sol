@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract OptionsContract is ERC20 {
@@ -33,6 +34,8 @@ contract OptionsContract is ERC20 {
     }
 
     // when a user buys an option, we mint them an erc20 token
+    // 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e eth/usd rinkeby oracle address
+    // 0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419 eth/usd mainnet oracle address
     function mintOption(
         uint256 _strikePrice,
         uint256 _optionPremium,
