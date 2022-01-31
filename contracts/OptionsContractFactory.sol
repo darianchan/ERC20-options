@@ -19,7 +19,8 @@ contract OptionsContractFactory {
       _;
     }
     
-    // price feed is the address of the chainlink oracle for the token
+    // factory used to deploy an options contract for each new erc20 token options are available to be traded on
+    // _pricefeed is the address of the chainlink oracle for the token
     function deployNewERC20Option(string calldata _name, string calldata _symbol, address _owner, address _priceFeed) onlyOwner public returns (address) {
       optionID++;
       OptionsContract token = new OptionsContract(_name, _symbol, _owner, _priceFeed);

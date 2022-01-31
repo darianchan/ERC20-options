@@ -7,6 +7,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 contract OptionsContract is ERC20 {
     address owner;
     uint256 optionID;
+    uint256 totalLiquidity; // For eth, it would just be how much ppl have single sided stake for eth
     AggregatorV3Interface private priceFeed;
 
     struct Option {
@@ -44,11 +45,13 @@ contract OptionsContract is ERC20 {
         uint256 _optionPremium,
         uint256 _expirationTime
     ) public payable {
-        // TODO: check that there is enoguh liquidity to purchase an option for that strike
-        // TODO: figure out how optionPremium is prices
+        // int256 currentPrice = getLatestPrice(); // price returned in wei
+        int256 currentPrice = 1 ether; // for testing purposes
+
+        require(totalLiquidity >= _strikePrice); // check that there is enough liquidty to purchase a call option at that strike
         require(
             msg.value >= _strikePrice + _optionPremium,
-            "not enough eth to lock in collateral"
+            "LOCK COLLATERAL: not enough eth to lock in collateral"
         );
 
         optionID++;
@@ -61,7 +64,7 @@ contract OptionsContract is ERC20 {
 
         activeOptions[optionID] = option;
 
-        _mint(msg.sender, 1); // TODO: placeholder for now, but figure out how to calculate erc20 to option value
+        _mint(msg.sender, _optionPremium); // erc20 value = _optionPremium. If an option costs 2 eth, then we mint them 2 erc tokens
 
         emit OptionMinted(
             msg.sender,
@@ -102,8 +105,19 @@ contract OptionsContract is ERC20 {
         return _optionID;
     }
 
+    // price gets returns in wei
     function getLatestPrice() private view returns (int256) {
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return price;
+    }
+
+    function getDecimals() public view returns (uint8) {
+        uint8 decimals = priceFeed.decimals();
+        return decimals;
+    }
+
+    // function to simulate a user adding liquidity to a vault. Ensures there is enough liquidity for another to buy an option
+    function addLiquidity() public payable {
+        totalLiquidity += msg.value;
     }
 }
