@@ -8,6 +8,7 @@ contract OptionsContract is ERC20 {
     address owner;
     uint256 optionID;
     uint256 totalLiquidity; // For eth, it would just be how much ppl have single sided stake for eth
+    int256 currentPrice = 2 ether; // TODO for testing purposes only in exercise option function
     AggregatorV3Interface private priceFeed;
 
     struct Option {
@@ -80,7 +81,7 @@ contract OptionsContract is ERC20 {
         returns (uint256)
     {
         // int256 currentPrice = getLatestPrice(); // price returned in wei
-        int256 currentPrice = 2 ether; // for testing purposes
+        // int256 currentPrice = 2 ether; // for testing purposes
         Option storage option = activeOptions[_optionID];
         require(
             block.timestamp >= option.expirationTime - 3600,
@@ -109,7 +110,7 @@ contract OptionsContract is ERC20 {
         return _optionID;
     }
 
-    // price gets returns in wei
+    // price gets returned in wei
     function getLatestPrice() private view returns (int256) {
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return price;

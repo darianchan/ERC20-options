@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { BigNumber } = ethers;
 
 describe("erc20-options", function () {
   let accounts;
@@ -19,11 +20,13 @@ describe("erc20-options", function () {
 
     await optionsContract.deployed();
 
-    // add 10 eth to ensure option liquidity
-    optionsContract.addLiquidity({ value: ethers.utils.parseEther("10") });
+    // add 10 eth by account2 to ensure option liquidity
+    optionsContract
+      .connect(accounts[1])
+      .addLiquidity({ value: ethers.utils.parseEther("10") });
   });
 
-  describe("mint option", function() {
+  describe("mint option", function () {
     it("should allow a user to mint an erc20 option with locked in collateral", async function () {
       await optionsContract.mintOption(
         ethers.utils.parseEther("1.5"),
@@ -35,7 +38,7 @@ describe("erc20-options", function () {
         ethers.utils.parseEther(".1")
       );
     });
-  
+
     it("should revert if a user tries to mint an optoin without locked in collateral", async function () {
       await expect(
         optionsContract.mintOption(
@@ -45,10 +48,10 @@ describe("erc20-options", function () {
         )
       ).to.be.reverted;
     });
-  })
+  });
 
-  describe("exercise option", function() {
-    beforeEach(async function() {
+  describe("exercise option", function () {
+    beforeEach(async function () {
       // first mint an option
       await optionsContract.mintOption(
         ethers.utils.parseEther("1.5"),
@@ -56,14 +59,41 @@ describe("erc20-options", function () {
         86400 * 7,
         { value: ethers.utils.parseEther("1.6") }
       );
-    })
+    });
 
-    it("should allow a user who owns an erc20 to exercise", async function() {
+    it("should allow a user who owns an erc20 to exercise when option is in profit", async function () {
       // increase time by 7 days so option expires
       await ethers.provider.send("evm_increaseTime", [86400 * 7]);
       await ethers.provider.send("evm_mine");
 
+      let beforeExerciseBalance = BigNumber.from(
+        await ethers.provider.getBalance(accounts[0].address)
+      );
       await optionsContract.exerciseOption(1);
-    })
-  })
+      let afterExerciseBalance = BigNumber.from(
+        await ethers.provider.getBalance(accounts[0].address)
+      );
+      let profit = afterExerciseBalance - beforeExerciseBalance;
+
+      expect(profit).to.be.greaterThan(0);
+    });
+
+    it("should send back collater when a user exercises option and is not in profit", async function () {
+      // increase time by 7 days so option expires
+      await ethers.provider.send("evm_increaseTime", [86400 * 7]);
+      await ethers.provider.send("evm_mine");
+
+      let beforeExerciseBalance = BigNumber.from(
+        await ethers.provider.getBalance(accounts[0].address)
+      );
+      await optionsContract.exerciseOption(1);
+      let afterExerciseBalance = BigNumber.from(
+        await ethers.provider.getBalance(accounts[0].address)
+      );
+      let profit = afterExerciseBalance - beforeExerciseBalance
+
+      expect(profit).to.be.greaterThan(0);
+
+    });
+  });
 });
