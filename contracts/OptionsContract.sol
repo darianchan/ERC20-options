@@ -79,20 +79,20 @@ contract OptionsContract is ERC20 {
         public
         returns (uint256)
     {
-        // uint256 currentPrice = getLatestPrice(); // price returned in wei
-        uint256 currentPrice = 2 ether; // for testing purposes
+        // int256 currentPrice = getLatestPrice(); // price returned in wei
+        int256 currentPrice = 2 ether; // for testing purposes
         Option storage option = activeOptions[_optionID];
         require(
             block.timestamp >= option.expirationTime - 3600,
             "not within exercise period"
         );
 
-        uint256 profit = option.strikePrice - currentPrice;
+        int256 profit = currentPrice - int256(option.strikePrice);
 
         // if there is a profit, then transfer the profit to owner + strike price (locked collateral)
         // if negative profit, then just transfer the strike price (locked collateral back) - buy loses on option premium
         if (profit >= 0) {
-            uint256 amountPositiveProfit = profit + option.strikePrice;
+            uint256 amountPositiveProfit = uint256(profit) + option.strikePrice;
             (bool success, ) = msg.sender.call{value: amountPositiveProfit}("");
             require(success);
         } else if (profit < 0) {
@@ -110,9 +110,9 @@ contract OptionsContract is ERC20 {
     }
 
     // price gets returns in wei
-    function getLatestPrice() private view returns (uint256) {
+    function getLatestPrice() private view returns (int256) {
         (, int256 price, , , ) = priceFeed.latestRoundData();
-        return uint256(price);
+        return price;
     }
 
     function getDecimals() public view returns (uint8) {
