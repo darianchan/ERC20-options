@@ -45,9 +45,10 @@ contract OptionsContract is ERC20 {
         uint256 _optionPremium,
         uint256 _expirationTime
     ) public payable {
-        // int256 currentPrice = getLatestPrice(); // price returned in wei
-        int256 currentPrice = 1 ether; // for testing purposes
-
+        // uint256 currentPrice = getLatestPrice(); // price returned in wei
+        uint256 currentPrice = 1 ether; // for testing purposes
+        
+        // TODO: add a model (potential black scholes) to calculate option premium
         require(totalLiquidity >= _strikePrice); // check that there is enough liquidty to purchase a call option at that strike
         require(
             msg.value >= _strikePrice + _optionPremium,
@@ -74,18 +75,19 @@ contract OptionsContract is ERC20 {
         );
     }
 
-    function exerciseOption(uint256 _optionID, uint256 _currentPrice)
+    function exerciseOption(uint256 _optionID)
         public
         returns (uint256)
     {
-        // TODO: get current price from a price oracle. Placeholder for now
+        // uint256 currentPrice = getLatestPrice(); // price returned in wei
+        uint256 currentPrice = 2 ether; // for testing purposes
         Option storage option = activeOptions[_optionID];
         require(
             block.timestamp >= option.expirationTime - 3600,
             "not within exercise period"
         );
 
-        uint256 profit = option.strikePrice - _currentPrice;
+        uint256 profit = option.strikePrice - currentPrice;
 
         // if there is a profit, then transfer the profit to owner + strike price (locked collateral)
         // if negative profit, then just transfer the strike price (locked collateral back) - buy loses on option premium
@@ -94,11 +96,13 @@ contract OptionsContract is ERC20 {
             (bool success, ) = msg.sender.call{value: amountPositiveProfit}("");
             require(success);
         } else if (profit < 0) {
-            uint256 amountNegativeProfit = option.strikePrice;
-            (bool success, ) = msg.sender.call{value: amountNegativeProfit}("");
+            uint256 collateralAmount = option.strikePrice;
+            (bool success, ) = msg.sender.call{value: collateralAmount}("");
             require(success);
         }
-
+        
+        // burn erc20 option tokens and delete from active options mapping
+        _burn(msg.sender, option.optionPremium);
         delete activeOptions[_optionID];
 
         emit OptionExercised(_optionID);
@@ -106,9 +110,9 @@ contract OptionsContract is ERC20 {
     }
 
     // price gets returns in wei
-    function getLatestPrice() private view returns (int256) {
+    function getLatestPrice() private view returns (uint256) {
         (, int256 price, , , ) = priceFeed.latestRoundData();
-        return price;
+        return uint256(price);
     }
 
     function getDecimals() public view returns (uint8) {
