@@ -1,7 +1,9 @@
+import OptionVaults from "./OptionVaults";
+
 function App() {
   return (
     <div>
-      this is the main app
+      <OptionVaults />
     </div>
   );
 }
