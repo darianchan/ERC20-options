@@ -2,6 +2,8 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = ethers;
 
+// For local testing, we set the current price = 1 ether because we are not testing with the price oracle on Rinkeby
+// Testing with the pricing oracle data need to be down on the Rinkeby network
 describe("erc20-options", function () {
   let accounts;
   let OptionsContractFactory;
@@ -52,7 +54,7 @@ describe("erc20-options", function () {
 
   describe("exercise option", function () {
     beforeEach(async function () {
-      // first mint an option
+      // first mint an option so we can test to excerise it
       await optionsContract.mintOption(
         ethers.utils.parseEther("1.5"),
         ethers.utils.parseEther(".1"),
@@ -78,7 +80,7 @@ describe("erc20-options", function () {
       expect(profit).to.be.greaterThan(0);
     });
 
-    it("should send back collater when a user exercises option and is not in profit", async function () {
+    it("should send back collateral when a user exercises option and is not in profit", async function () {
       // increase time by 7 days so option expires
       await ethers.provider.send("evm_increaseTime", [86400 * 7]);
       await ethers.provider.send("evm_mine");
@@ -93,7 +95,6 @@ describe("erc20-options", function () {
       let profit = afterExerciseBalance - beforeExerciseBalance
 
       expect(profit).to.be.greaterThan(0);
-
     });
   });
 });

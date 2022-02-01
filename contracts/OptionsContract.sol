@@ -7,8 +7,8 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 contract OptionsContract is ERC20 {
     address owner;
     uint256 optionID;
-    uint256 totalLiquidity; // For eth, it would just be how much ppl have single sided stake for eth
-    int256 currentPrice = 2 ether; // TODO for testing purposes only in exercise option function
+    uint256 public totalLiquidity; // For eth, it would just be how much ppl have single sided stake for eth
+    int256 currentPrice = 1 ether; // TODO for testing purposes only in exercise option function
     AggregatorV3Interface private priceFeed;
 
     struct Option {
@@ -39,17 +39,16 @@ contract OptionsContract is ERC20 {
     }
 
     // when a user buys an option, we mint them an erc20 token
-    // 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e eth/usd rinkeby oracle address
     // 0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419 eth/usd mainnet oracle address
+    // 0x8A753747A1Fa494EC906cE90E9f37563A8AF630e eth/usd rinkeby oracle address
     function mintOption(
         uint256 _strikePrice,
-        uint256 _optionPremium,
+        uint256 _optionPremium, // option premium calculated as strik
         uint256 _expirationTime
     ) public payable {
-        // uint256 currentPrice = getLatestPrice(); // price returned in wei
-        uint256 currentPrice = 1 ether; // for testing purposes
+        // int256 currentPrice = getLatestPrice(); // price returned in wei
         
-        // TODO: add a model (potential black scholes) to calculate option premium
+        // NOTE: future implementation - black scholes/volatility pricing model to calculate option premium
         require(totalLiquidity >= _strikePrice); // check that there is enough liquidty to purchase a call option at that strike
         require(
             msg.value >= _strikePrice + _optionPremium,
@@ -81,7 +80,7 @@ contract OptionsContract is ERC20 {
         returns (uint256)
     {
         // int256 currentPrice = getLatestPrice(); // price returned in wei
-        // int256 currentPrice = 2 ether; // for testing purposes
+
         Option storage option = activeOptions[_optionID];
         require(
             block.timestamp >= option.expirationTime - 3600,
@@ -111,7 +110,7 @@ contract OptionsContract is ERC20 {
     }
 
     // price gets returned in wei
-    function getLatestPrice() private view returns (int256) {
+    function getLatestPrice() public view returns (int256) {
         (, int256 price, , , ) = priceFeed.latestRoundData();
         return price;
     }
